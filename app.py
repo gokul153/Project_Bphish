@@ -1,6 +1,8 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from flask import Flask, request, jsonify,g
+from flask_sqlalchemy import SQLAlchemy
+
 import lightgbm as lgb
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -25,6 +27,22 @@ bst = lgb.Booster(model_file='crop_reccomendation_model.txt')
 
 app = Flask(__name__)
 app.config["DEBUG"]=True
+app.config["SECRET_KEY"]='571ebf8e12ca2'
+app.config ['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ip.db'
+app.config ['SQLALCHEMY_TRACK_MODIFIACTION'] = False
+db =SQLAlchemy(app)
+class UserIP(db.Model):
+     id=db.Column(db.Integer,primary_key =True)
+     ip_address = db.Column(db.String(45), nullable=False)
+
+def __repr__(self):
+     return f'<User {self.username}>'
+with app.app_context():
+     db.create_all()
+
+#app.config.from_object['config']
+#from app import veiws
+#from app import models
 
 limiter = Limiter(
     get_remote_address,
@@ -38,7 +56,16 @@ limiter = Limiter(
 @app.route("/slow")
 @limiter.limit("10 per day")
 def slow():
-    g.ip_addr=request.remote_addr
+    ip_addr=request.remote_addr
+    user_ip = UserIP(ip_address=ip_addr)  # Create a new UserIP object
+    db.session.add(user_ip) 
+    #db.session.add(user)
+    try:
+         db.session.commit()
+         return "ip added"
+    except Exception as e:
+         db.session.rollback()
+         return f"Commit failed. Error {e}"     
     print(g.ip_addr)
     return g.ip_addr
 
@@ -64,8 +91,9 @@ def hello_world():
     return "Models loaded"
 @app.route("/get_my_ip")
 def get_my_ip():
-     ip = g.ip_addr
-     return ip
+     ips = UserIP.query.all()  # Retrieve all the saved IP addresses
+     ip_list = [ip.ip_address for ip in ips]  # Extract the IP addresses from the objects
+     return "Saved IP addresses: {}".format(', '.join(ip_list))
   #  return jsonify({'ip': request.remote_addr}), 200
 
 @app.route("/crop",methods = ['GET'])

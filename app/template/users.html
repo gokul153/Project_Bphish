@@ -1,0 +1,19 @@
+<!DOCTYPE html> 
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Users</title>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th> Username</th>
+            </tr>
+            {% for user in users %}
+            <tr>
+                <td>{{user.ID}}</td>
+                 <td>{{user.username }}</td>   
+            </tr>
+            {%}
+        </table>
+    </head>
+</html>
